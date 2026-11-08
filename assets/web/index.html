@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f0f0f">
+<title>YTgram</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root{
+    --bg:#0f0f0f; --card:#181818; --text:#f1f1f1; --muted:#aaa;
+    --accent:#ff0000; --chip:#272727; --border:#303030;
+  }
+  .light{
+    --bg:#ffffff; --card:#f9f9f9; --text:#0f0f0f; --muted:#606060;
+    --chip:#ececec; --border:#e5e5e5;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    transition:background .2s,color .2s}
+  a{color:inherit;text-decoration:none}
+
+  /* HEADER */
+  header{
+    position:sticky;top:0;z-index:20;background:var(--bg);
+    padding:10px 12px 8px;border-bottom:1px solid var(--border)
+  }
+  .topbar{display:flex;align-items:center;gap:8px}
+  .logo{font-weight:700;font-size:18px;color:var(--accent);letter-spacing:-.5px}
+  .logo span{color:var(--text)}
+  .searchbox{
+    flex:1;display:flex;align-items:center;background:var(--chip);
+    border-radius:20px;padding:6px 12px;gap:6px
+  }
+  .searchbox input{
+    flex:1;border:0;outline:0;background:transparent;color:var(--text);
+    font-size:14px;padding:4px 0
+  }
+  .iconbtn{
+    background:transparent;border:0;color:var(--text);font-size:18px;
+    padding:6px;border-radius:50%;cursor:pointer
+  }
+  .iconbtn:hover{background:var(--chip)}
+
+  /* CATEGORY CHIPS */
+  .chips{
+    display:flex;gap:8px;overflow-x:auto;padding:10px 0 4px;
+    scrollbar-width:none
+  }
+  .chips::-webkit-scrollbar{display:none}
+  .chip{
+    flex:0 0 auto;background:var(--chip);color:var(--text);
+    border:0;padding:6px 14px;border-radius:16px;font-size:13px;
+    cursor:pointer;white-space:nowrap
+  }
+  .chip.active{background:var(--text);color:var(--bg);font-weight:600}
+
+  /* GRID */
+  main{padding:8px 12px 80px}
+  .grid{display:grid;gap:14px}
+  .card{background:transparent;cursor:pointer}
+  .thumb{
+    position:relative;width:100%;aspect-ratio:16/9;border-radius:12px;
+    overflow:hidden;background:var(--card)
+  }
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .duration{
+    position:absolute;right:6px;bottom:6px;background:rgba(0,0,0,.8);
+    color:#fff;font-size:11px;padding:2px 5px;border-radius:4px
+  }
+  .info{display:flex;gap:10px;padding:8px 2px 0}
+  .avatar{
+    width:34px;height:34px;border-radius:50%;background:var(--chip);
+    flex:0 0 34px;overflow:hidden
+  }
+  .avatar img{width:100%;height:100%;object-fit:cover}
+  .meta{flex:1;min-width:0}
+  .title{
+    font-size:14px;font-weight:500;line-height:1.3;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+    overflow:hidden
+  }
+  .sub{font-size:12px;color:var(--muted);margin-top:3px}
+
+  /* PLAYER */
+  .playerpage{display:none}
+  .playerpage.active{display:block}
+  .homepage.hidden{display:none}
+  .playerwrap{
+    width:100%;aspect-ratio:16/9;background:#000;border-radius:0
+  }
+  .playerwrap iframe{width:100%;height:100%;border:0;display:block}
+  .pinfo{padding:12px}
+  .ptitle{font-size:16px;font-weight:600;line-height:1.3;margin:0 0 6px}
+  .pmeta{font-size:13px;color:var(--muted)}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .action{
+    display:flex;align-items:center;gap:6px;background:var(--chip);
+    border:0;color:var(--text);padding:8px 14px;border-radius:20px;
+    font-size:13px;cursor:pointer
+  }
+  .action.on{background:var(--accent);color:#fff}
+  .backbtn{
+    background:transparent;border:0;color:var(--text);
+    padding:10px 12px;font-size:15px;cursor:pointer
+  }
+
+  /* TOAST */
+  #toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:#333;color:#fff;padding:10px 18px;border-radius:20px;
+    font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:100
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* SKELETON */
+  .skel{background:linear-gradient(90deg,var(--card) 25%,var(--chip) 50%,var(--card) 75%);
+    background-size:200% 100%;animation:sh 1.4s infinite;border-radius:12px}
+  @keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  .skel-thumb{aspect-ratio:16/9;width:100%}
+  .skel-line{height:12px;margin-top:8px;border-radius:6px}
+
+  @media(min-width:700px){
+    .grid{grid-template-columns:repeat(2,1fr)}
+    main{max-width:1100px;margin:0 auto}
+  }
+  @media(min-width:1000px){
+    .grid{grid-template-columns:repeat(3,1fr)}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="topbar">
+    <button class="iconbtn" id="backBtn" style="display:none" onclick="goHome()">←</button>
+    <div class="logo" onclick="goHome()">YT<span>gram</span></div>
+    <div class="searchbox">
+      <span>🔍</span>
+      <input id="searchInput" placeholder="Search YouTube…" autocomplete="off">
+    </div>
+    <button class="iconbtn" id="themeBtn" title="Toggle theme">🌙</button>
+  </div>
+  <div class="chips" id="chips"></div>
+</header>
+
+<main>
+  <!-- HOME -->
+  <div class="homepage" id="homePage">
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <!-- PLAYER -->
+  <div class="playerpage" id="playerPage">
+    <div class="playerwrap"><iframe id="ytFrame" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe></div>
+    <div class="pinfo">
+      <h2 class="ptitle" id="pTitle"></h2>
+      <div class="pmeta" id="pMeta"></div>
+      <div class="actions">
+        <button class="action" id="likeBtn">👍 <span>Like</span></button>
+        <button class="action" id="saveBtn">🔖 <span>Save</span></button>
+        <button class="action" id="shareBtn">📤 <span>Share</span></button>
+        <button class="action" id="copyBtn">🔗 <span>Copy link</span></button>
+      </div>
+    </div>
+    <div class="grid" id="related" style="padding:0 12px 40px"></div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   CONFIG — put your YouTube Data API v3 key here.
+   Get one free at https://console.cloud.google.com
+   Enable "YouTube Data API v3" → Credentials → API key.
+   ============================================================ */
+const YT_API_KEY = "AIzaSyDZ7vG6x009lqYLrS9i4eeQwkrppyKePA0";
+
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+
+/* ------- state ------- */
+const state = {
+  region: "US",
+  category: "0",       // "0" = trending overall
+  query: "",
+  currentVideo: null,
+  likes:   JSON.parse(localStorage.getItem("ytg_likes")   || "[]"),
+  saves:   JSON.parse(localStorage.getItem("ytg_saves")   || "[]"),
+};
+
+/* ------- categories (YouTube videoCategoryIds, region US) ------- */
+const CATEGORIES = [
+  { id: "0",  name: "Trending" },
+  { id: "10", name: "Music" },
+  { id: "20", name: "Gaming" },
+  { id: "17", name: "Sports" },
+  { id: "24", name: "Entertainment" },
+  { id: "23", name: "Comedy" },
+  { id: "27", name: "Education" },
+  { id: "28", name: "Science & Tech" },
+  { id: "25", name: "News" },
+  { id: "22", name: "People & Blogs" },
+];
+
+/* ============================================================
+   API HELPERS
+   ============================================================ */
+async function ytFetch(path, params) {
+  if (!YT_API_KEY || YT_API_KEY.startsWith("PASTE_")) {
+    throw new Error("NO_KEY");
+  }
+  const url = new URL("https://www.googleapis.com/youtube/v3/" + path);
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
+  url.searchParams.set("key", YT_API_KEY);
+  const r = await fetch(url);
+  if (!r.ok) {
+    const err = await r.json().catch(()=>({}));
+    throw new Error(err?.error?.message || ("HTTP " + r.status));
+  }
+  return r.json();
+}
+
+/* Trending / by category */
+async function fetchTrending(categoryId) {
+  const params = {
+    part: "snippet,statistics,contentDetails",
+    chart: "mostPopular",
+    regionCode: state.region,
+    maxResults: 24,
+  };
+  if (categoryId && categoryId !== "0") params.videoCategoryId = categoryId;
+  const data = await ytFetch("videos", params);
+  return data.items || [];
+}
+
+/* Search */
+async function fetchSearch(q) {
+  const s = await ytFetch("search", {
+    part: "snippet", q, type: "video", maxResults: 24, safeSearch: "moderate"
+  });
+  const ids = (s.items||[]).map(i=>i.id.videoId).filter(Boolean);
+  if (!ids.length) return [];
+  const d = await ytFetch("videos", {
+    part: "snippet,statistics,contentDetails", id: ids.join(",")
+  });
+  return d.items || [];
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function fmtViews(n) {
+  n = parseInt(n||0,10);
+  if (n >= 1e9) return (n/1e9).toFixed(1)+"B views";
+  if (n >= 1e6) return (n/1e6).toFixed(1)+"M views";
+  if (n >= 1e3) return (n/1e3).toFixed(1)+"K views";
+  return n + " views";
+}
+function fmtAgo(iso) {
+  const d = (Date.now() - new Date(iso).getTime())/1000;
+  const u = [["y",31536000],["mo",2592000],["w",604800],["d",86400],["h",3600],["m",60]];
+  for (const [l,s] of u) if (d>=s) return Math.floor(d/s)+l+" ago";
+  return "just now";
+}
+function fmtDur(iso) {
+  const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!m) return "";
+  const h=+m[1]||0, mi=+m[2]||0, s=+m[3]||0;
+  return (h? h+":"+String(mi).padStart(2,"0") : mi) + ":" + String(s).padStart(2,"0");
+}
+function esc(s){return (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+
+function cardHTML(v){
+  const s = v.snippet, st = v.statistics||{}, cd = v.contentDetails||{};
+  const id = typeof v.id === "object" ? v.id.videoId : v.id;
+  const thumb = s.thumbnails?.medium?.url || s.thumbnails?.default?.url;
+  return `
+    <div class="card" onclick="openVideo('${id}')">
+      <div class="thumb">
+        <img src="${thumb}" alt="" loading="lazy">
+        ${cd.duration? `<span class="duration">${fmtDur(cd.duration)}</span>`:""}
+      </div>
+      <div class="info">
+        <div class="avatar"></div>
+        <div class="meta">
+          <div class="title">${esc(s.title)}</div>
+          <div class="sub">${esc(s.channelTitle)}</div>
+          <div class="sub">${fmtViews(st.viewCount)} • ${fmtAgo(s.publishedAt)}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function skeletons(n=6){
+  return Array.from({length:n}).map(()=>`
+    <div class="card">
+      <div class="skel skel-thumb"></div>
+      <div class="skel skel-line" style="width:90%"></div>
+      <div class="skel skel-line" style="width:60%"></div>
+    </div>`).join("");
+}
+
+function renderChips(){
+  document.getElementById("chips").innerHTML = CATEGORIES.map(c=>
+    `<button class="chip ${c.id===state.category?"active":""}" data-id="${c.id}">${c.name}</button>`
+  ).join("");
+  document.querySelectorAll(".chip").forEach(b=>{
+    b.onclick = () => {
+      state.category = b.dataset.id;
+      state.query = "";
+      document.getElementById("searchInput").value = "";
+      renderChips();
+      loadTrending();
+    };
+  });
+}
+
+async function loadTrending(){
+  const grid = document.getElementById("grid");
+  grid.innerHTML = skeletons();
+  try{
+    const items = await fetchTrending(state.category);
+    grid.innerHTML = items.length
+      ? items.map(cardHTML).join("")
+      : `<p style="color:var(--muted)">No videos found.</p>`;
+  }catch(e){
+    showError(e);
+  }
+}
+
+async function doSearch(q){
+  const grid = document.getElementById("grid");
+  grid.innerHTML = skeletons();
+  try{
+    const items = await fetchSearch(q);
+    grid.innerHTML = items.length
+      ? items.map(cardHTML).join("")
+      : `<p style="color:var(--muted)">No results for "${esc(q)}".</p>`;
+  }catch(e){
+    showError(e);
+  }
+}
+
+function showError(e){
+  const grid = document.getElementById("grid");
+  if (String(e.message) === "NO_KEY"){
+    grid.innerHTML = `
+      <div style="padding:24px;text-align:center;grid-column:1/-1">
+        <h2>🔑 Setup needed</h2>
+        <p style="color:var(--muted);font-size:14px;line-height:1.5">
+          Add your YouTube Data API v3 key.<br>
+          1. <a href="https://console.cloud.google.com" target="_blank" style="color:var(--accent)">Create a project</a><br>
+          2. Enable <b>YouTube Data API v3</b><br>
+          3. Create an API key, then paste it in the <code>YT_API_KEY</code> variable in this file.
+        </p>
+      </div>`;
+  } else {
+    grid.innerHTML = `<p style="color:var(--muted)">⚠️ ${esc(e.message)}</p>`;
+  }
+}
+
+/* ============================================================
+   PLAYER
+   ============================================================ */
+async function openVideo(id){
+  document.getElementById("homePage").classList.add("hidden");
+  document.getElementById("playerPage").classList.add("active");
+  document.getElementById("backBtn").style.display = "inline-block";
+  window.scrollTo({top:0});
+  if (tg) tg.BackButton?.show?.();
+
+  // Official YouTube embed — legal & required by YouTube ToS
+  const frame = document.getElementById("ytFrame");
+  frame.src = `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&modestbranding=1`;
+
+  document.getElementById("pTitle").textContent = "Loading…";
+  document.getElementById("pMeta").textContent  = "";
+  document.getElementById("related").innerHTML  = "";
+
+  // Get details via API for accurate title/meta (does NOT play — just metadata)
+  try{
+    const d = await ytFetch("videos", { part:"snippet,statistics,contentDetails", id });
+    const v = d.items?.[0];
+    if (!v) return;
+    state.currentVideo = v;
+    document.getElementById("pTitle").textContent = v.snippet.title;
+    document.getElementById("pMeta").textContent =
+      `${v.snippet.channelTitle} • ${fmtViews(v.statistics?.viewCount)} • ${fmtAgo(v.snippet.publishedAt)}`;
+    updateActionButtons();
+
+    // Related = search by channel or default trending
+    const rel = await ytFetch("search", {
+      part:"snippet", type:"video", maxResults:12,
+      q: v.snippet.channelTitle, safeSearch:"moderate"
+    });
+    const ids = rel.items.map(i=>i.id.videoId).filter(x=>x && x!==id).slice(0,11);
+    if (ids.length){
+      const relDetails = await ytFetch("videos", { part:"snippet,statistics,contentDetails", id: ids.join(",") });
+      document.getElementById("related").innerHTML = relDetails.items.map(cardHTML).join("");
+    }
+  }catch(e){
+    document.getElementById("pTitle").textContent = "Video";
+    document.getElementById("pMeta").textContent  = e.message === "NO_KEY"
+      ? "Add your API key to show video details."
+      : e.message;
+  }
+}
+
+function goHome(){
+  document.getElementById("playerPage").classList.remove("active");
+  document.getElementById("homePage").classList.remove("hidden");
+  document.getElementById("backBtn").style.display = "none";
+  document.getElementById("ytFrame").src = "";
+  state.currentVideo = null;
+  if (tg) tg.BackButton?.hide?.();
+}
+
+/* ============================================================
+   ACTIONS: like / save / share / copy
+   ============================================================ */
+function updateActionButtons(){
+  const id = state.currentVideo && (typeof state.currentVideo.id === "object"
+    ? state.currentVideo.id.videoId : state.currentVideo.id);
+  document.getElementById("likeBtn").classList.toggle("on", state.likes.includes(id));
+  document.getElementById("saveBtn").classList.toggle("on", state.saves.includes(id));
+}
+
+document.getElementById("likeBtn").onclick = ()=>{
+  const v = state.currentVideo; if (!v) return;
+  const id = typeof v.id === "object" ? v.id.videoId : v.id;
+  const i = state.likes.indexOf(id);
+  if (i>=0) state.likes.splice(i,1); else state.likes.push(id);
+  localStorage.setItem("ytg_likes", JSON.stringify(state.likes));
+  updateActionButtons();
+  toast(state.likes.includes(id) ? "👍 Liked" : "Like removed");
+};
+
+document.getElementById("saveBtn").onclick = ()=>{
+  const v = state.currentVideo; if (!v) return;
+  const id = typeof v.id === "object" ? v.id.videoId : v.id;
+  const i = state.saves.indexOf(id);
+  if (i>=0) state.saves.splice(i,1); else state.saves.push(id);
+  localStorage.setItem("ytg_saves", JSON.stringify(state.saves));
+  updateActionButtons();
+  toast(state.saves.includes(id) ? "🔖 Saved" : "Removed from saved");
+};
+
+document.getElementById("shareBtn").onclick = ()=>{
+  const v = state.currentVideo; if (!v) return;
+  const id = typeof v.id === "object" ? v.id.videoId : v.id;
+  const url = `https://youtu.be/${id}`;
+  const text = `${v.snippet.title}\n${url}`;
+  if (tg){
+    tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(v.snippet.title)}`);
+  } else if (navigator.share){
+    navigator.share({ title: v.snippet.title, url });
+  } else {
+    copy(url);
+  }
+};
+
+document.getElementById("copyBtn").onclick = ()=>{
+  const v = state.currentVideo; if (!v) return;
+  const id = typeof v.id === "object" ? v.id.videoId : v.id;
+  copy(`https://youtu.be/${id}`);
+};
+
+function copy(txt){
+  navigator.clipboard?.writeText(txt).then(
+    ()=>toast("🔗 Link copied"),
+    ()=>toast("Copy failed")
+  );
+}
+
+/* ============================================================
+   UI EVENTS
+   ============================================================ */
+document.getElementById("searchInput").addEventListener("keydown", e=>{
+  if (e.key === "Enter"){
+    const q = e.target.value.trim();
+    if (!q) return;
+    state.query = q;
+    goHome();
+    doSearch(q);
+  }
+});
+
+document.getElementById("backBtn").onclick = goHome;
+
+/* Theme */
+document.getElementById("themeBtn").onclick = ()=>{
+  document.body.classList.toggle("light");
+  const light = document.body.classList.contains("light");
+  document.getElementById("themeBtn").textContent = light ? "☀️" : "🌙";
+  localStorage.setItem("ytg_theme", light ? "light" : "dark");
+};
+if (localStorage.getItem("ytg_theme") === "light"){
+  document.body.classList.add("light");
+  document.getElementById("themeBtn").textContent = "☀️";
+}
+
+/* Toast */
+let toastT;
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastT);
+  toastT = setTimeout(()=>t.classList.remove("show"), 1800);
+}
+
+/* Telegram BackButton */
+if (tg){
+  tg.BackButton?.onClick?.(() => goHome());
+}
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+renderChips();
+loadTrending();
+</script>
+</body>
+</html>
